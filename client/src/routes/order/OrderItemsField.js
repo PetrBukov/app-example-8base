@@ -221,7 +221,7 @@ class OrderItemsField extends React.PureComponent {
                 }}
                 disabled={!productValue}
               >
-                <Icon name="Plus" />
+                <Icon name="Add" />
               </Button>
             </Grid.Box>
           </Grid.Layout>
