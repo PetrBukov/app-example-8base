@@ -148,7 +148,7 @@ const Order = ehnhancer(
       const initialValue = {
         ...order,
         orderItems: order.orderItems.items,
-        client: order.client.id,
+        client: order.client ? order.client.id : 0,
       };
       return (
         <Grid.Layout gap="md" stretch>
