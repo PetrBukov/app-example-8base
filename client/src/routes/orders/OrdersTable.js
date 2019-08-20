@@ -30,6 +30,14 @@ const ORDERS_LIST_QUERY = gql`
     ) {
       items {
         id
+        orderItems {
+          items {
+            product {
+              price
+            }
+            quantity
+          }
+        }
         client {
           id
           _description
@@ -98,6 +106,17 @@ const TABLE_COLUMNS = [
       fieldType: FIELD_TYPE.SWITCH,
       fieldTypeAttributes: {
         format: 'CUSTOM',
+      },
+    },
+  },
+  {
+    name: 'totalCost',
+    title: 'Total Cost',
+    meta: {
+      isList: false,
+      fieldType: FIELD_TYPE.TEXT,
+      fieldTypeAttributes: {
+        format: 'UNFORMATTED',
       },
     },
   },
@@ -240,10 +259,24 @@ const OrdersTable = enhancer(
       const tableData = objectPath.get(data, ['ordersList', 'items']) || [];
       const finalTableState = R.assocPath(['pagination', 'total'], total, tableState);
 
+      const finalTableData = tableData.map(order => {
+        const totalCost = `$${Math.round(
+          order.orderItems.items.reduce((sum, orderItem) => {
+            return sum + orderItem.product.price * orderItem.quantity;
+          }, 0) * 100
+        ) / 100}`;
+        return {
+          ...order,
+          totalCost,
+        };
+      });
+
+      console.log('tableData', tableData);
+
       return (
         <TableBuilder
           loading={loading}
-          data={tableData}
+          data={finalTableData}
           columns={TABLE_COLUMNS}
           action="Create Order"
           renderCell={this.renderCell}
