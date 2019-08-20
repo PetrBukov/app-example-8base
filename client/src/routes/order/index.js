@@ -2,8 +2,19 @@ import React from 'react';
 import gql from 'graphql-tag';
 import { Query, graphql, compose } from 'react-apollo';
 
-import { Form as FormLogic, Field } from '@8base/forms';
-import { Card, Grid, Heading, Loader, NoData, SelectField, InputField, DateInputField, Button } from '@8base/boost';
+import { Form as FormLogic, Field, FieldArray } from '@8base/forms';
+import {
+  Card,
+  Grid,
+  Heading,
+  Loader,
+  NoData,
+  SelectField,
+  InputField,
+  DateInputField,
+  Button,
+  Icon,
+} from '@8base/boost';
 
 import { OrderCreateDialog } from '../orders/OrderCreateDialog';
 import { OrderEditDialog } from '../orders/OrderEditDialog';
@@ -161,7 +172,7 @@ const Order = ehnhancer(
               // formatRelationToIds
             >
               {test => {
-                const { handleSubmit, invalid, submitting, pristine } = test;
+                const { handleSubmit, invalid, submitting, pristine, values } = test;
                 return (
                   <form onSubmit={handleSubmit}>
                     <Grid.Layout gap="md" stretch>
@@ -184,28 +195,91 @@ const Order = ehnhancer(
                       <Grid.Box>
                         <Field name="address" label="Address" component={InputField} />
                       </Grid.Box>
-                      <Grid.Box>
-                        <Query query={PRODUCTS_LIST_QUERY}>
-                          {({ data, loading }) => {
-                            return (
-                              <Field
-                                name="orderItems"
-                                label="Order Items"
-                                component={OrderItemsField}
-                                options={
-                                  loading
-                                    ? []
-                                    : data.productsList.items.map(({ id: value, name: label, price }) => ({
-                                        value,
-                                        label,
-                                        price,
-                                      }))
-                                }
-                              />
-                            );
-                          }}
-                        </Query>
-                      </Grid.Box>
+
+                      <Query query={PRODUCTS_LIST_QUERY}>
+                        {({ data, loading }) => {
+                          return (
+                            <FieldArray name={'orderItems'}>
+                              {({ fields }) => {
+                                const productOptions = loading
+                                  ? []
+                                  : data.productsList.items.map(({ id: value, name: label, price }) => ({
+                                      value,
+                                      label,
+                                      price,
+                                    }));
+                                const filterdProductsOptions = productOptions.filter(product => {
+                                  return !fields.value.some(orderItem => orderItem.product.id === product.value);
+                                });
+                                return (
+                                  <>
+                                    <Heading type="h5" text="Order Items:" />
+                                    {fields.value.length === 0 && (
+                                      <div>No Order Items have been applied to this Order</div>
+                                    )}
+                                    {fields.map((name, fieldIndex) => {
+                                      const {
+                                        product: {
+                                          id: currentOrderItemId,
+                                          name: currentOrderItemName,
+                                          price: currentOrderItemPrice,
+                                        },
+                                      } = fields.value[fieldIndex];
+                                      const currentProduct = {
+                                        label: currentOrderItemName,
+                                        value: currentOrderItemId,
+                                        price: currentOrderItemPrice,
+                                      };
+                                      return (
+                                        <Grid.Box>
+                                          <Field
+                                            key={fieldIndex}
+                                            name={name}
+                                            displayLabel={fieldIndex === 0}
+                                            component={OrderItemsField}
+                                            productOptions={[...filterdProductsOptions, currentProduct]}
+                                            deleteOrderItem={() => fields.remove(fieldIndex)}
+                                          />
+                                        </Grid.Box>
+                                      );
+                                    })}
+                                    <Heading
+                                      type="h5"
+                                      text={`Total: $${Math.round(
+                                        fields.value.reduce((sum, current) => {
+                                          const {
+                                            product: { price },
+                                            quantity,
+                                          } = current;
+                                          return sum + price * quantity;
+                                        }, 0) * 100
+                                      ) / 100}`}
+                                    />
+                                    <Button
+                                      type="button"
+                                      onClick={() => {
+                                        const { label, value, price } = filterdProductsOptions[0];
+                                        fields.push({
+                                          product: {
+                                            id: value,
+                                            price,
+                                            name: label,
+                                          },
+                                          quantity: 1,
+                                        });
+                                      }}
+                                    >
+                                      <Icon name="Add" />
+                                      Add Order Item
+                                    </Button>
+                                  </>
+                                );
+                              }}
+                            </FieldArray>
+                          );
+                        }}
+                      </Query>
+
                       <Grid.Box>
                         <Field name="deliveryDt" label="Delivery Dt" withTime={true} component={DateInputField} />
                       </Grid.Box>
