@@ -15,7 +15,7 @@ const ORDER_DELETE_MUTATION = gql`
 const enhancer = graphql(ORDER_DELETE_MUTATION, {
   name: 'orderDelete',
   options: {
-    refetchQueries: ['OrdersTableContent', 'OrdersList'],
+    refetchQueries: ['OrdersTableContent', 'OrdersList', 'GetClientById'],
     context: {
       TOAST_SUCCESS_MESSAGE: 'Order successfully deleted',
     },

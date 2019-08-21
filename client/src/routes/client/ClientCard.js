@@ -345,6 +345,5 @@ const ClientCard = enhancer(
     }
   }
 );
-// cjz2ho7g200oo01mj28qbf6e7
 
 export { ClientCard };
